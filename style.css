@@ -54,6 +54,8 @@ h1 .year { color: var(--text-secondary); font-weight: 400; }
 }
 .upload-btn:hover { opacity: 0.9; }
 
+.upload-btn.secondary-btn { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); }
+
 .upload-status { font-size: 13px; color: var(--text-secondary); }
 
 .container { max-width: 1080px; margin: 0 auto; padding: 20px; }
@@ -115,7 +117,30 @@ thead th { color: var(--text-secondary); font-weight: 500; font-size: 12px; bord
 tbody tr:hover { background: var(--surface-2); }
 td.extra-col { color: var(--text-muted); font-style: italic; }
 td.zero { color: var(--text-muted); }
+td.row-total { font-weight: 500; border-left: 2px solid var(--border); }
 .total-row td { font-weight: 500; border-top: 2px solid var(--border); }
+
+.chemical-filter { display: flex; flex-wrap: wrap; gap: 14px; }
+.chem-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.chem-toggle input { cursor: pointer; }
+
+.diff-panel { display: flex; flex-direction: column; gap: 8px; }
+.diff-empty { font-size: 13px; color: var(--text-muted); margin: 0; }
+.diff-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.diff-name { min-width: 110px; color: var(--text-secondary); }
+.diff-up { color: #1baf7a; font-weight: 500; }
+.diff-down { color: #e34948; font-weight: 500; }
+.diff-flat { color: var(--text-secondary); font-weight: 500; }
+.diff-unchanged { color: var(--text-muted); }
+.diff-meta { color: var(--text-muted); font-size: 12px; }
 
 .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-secondary); }
 .legend-item { display: flex; align-items: center; gap: 4px; }
