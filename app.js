@@ -21,34 +21,67 @@ let chartInstance = null;
 let selectedChemicals = new Set(CHEM_ORDER);
 
 // ---------- Shared row parsing (works for SheetJS rows and Google Sheets API rows) ----------
+// Robust version: tolerates tables that are shifted left/right by a column and
+// sheets where the "Week" label cell is missing (e.g. the September 26 layout issue).
 
 function parseMonthRows(rows, sheetName) {
-  let weekRowIdx = -1;
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i] && rows[i][1] === "Week") { weekRowIdx = i; break; }
-  }
-
   const entry = { label: sheetName.replace(" 26", " 2026"), weeks: [], extraCols: [], chemicals: [] };
-  if (weekRowIdx === -1) return entry;
+  if (!rows || !rows.length) return entry;
 
-  const header = rows[weekRowIdx];
+  // 1) Find the chemical rows and which column holds the chemical names.
+  //    Normally column B (index 1), but scan columns A–D so a shifted table still works.
+  let nameCol = -1;
+  let firstChemRow = -1;
+  outer:
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    for (let c = 0; c <= 3 && c < row.length; c++) {
+      if (CHEM_ORDER.includes(row[c])) { nameCol = c; firstChemRow = i; break outer; }
+    }
+  }
+  if (nameCol === -1) return entry;
+
+  // 2) Find the header row with the week numbers.
+  //    Preferred: a row containing a "Week" label (use the last one above the chemicals).
+  //    Fallback: the nearest row above the chemicals with 2+ numbers after the name column
+  //    (this recovers sheets where the "Week" label was deleted or the table was shifted).
+  let headerRow = null;
+  let headerStart = nameCol + 1;
+  for (let i = 0; i < firstChemRow; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const wc = row.findIndex(v => typeof v === "string" && v.trim() === "Week");
+    if (wc !== -1) { headerRow = row; headerStart = wc + 1; }
+  }
+  if (!headerRow) {
+    for (let i = firstChemRow - 1; i >= 0 && i >= firstChemRow - 6; i--) {
+      const row = rows[i];
+      if (!row) continue;
+      const numCount = row.slice(nameCol + 1).filter(v => typeof v === "number").length;
+      if (numCount >= 2) { headerRow = row; headerStart = nameCol + 1; break; }
+    }
+  }
+  if (!headerRow) return entry;
+
   const weekCols = [];
-  const extraCols = [];
-  for (let ci = 2; ci < header.length; ci++) {
-    const val = header[ci];
+  const extraColPairs = [];
+  for (let ci = headerStart; ci < headerRow.length; ci++) {
+    const val = headerRow[ci];
     if (typeof val === "number") weekCols.push([ci, Math.round(val)]);
-    else if (val === "Projected" || val === "Ordered" || val === "Received") extraCols.push([ci, val]);
+    else if (val === "Projected" || val === "Ordered" || val === "Received") extraColPairs.push([ci, val]);
   }
   entry.weeks = weekCols.map(c => c[1]);
-  entry.extraCols = extraCols.map(c => c[1]);
+  entry.extraCols = extraColPairs.map(c => c[1]);
 
-  for (let r = weekRowIdx + 1; r < rows.length; r++) {
+  // 3) Parse the chemical rows using the detected name column.
+  for (let r = firstChemRow; r < rows.length; r++) {
     const row = rows[r];
-    if (!row || row[1] == null) continue;
-    const name = row[1];
+    if (!row || row[nameCol] == null) continue;
+    const name = row[nameCol];
     if (CHEM_ORDER.includes(name)) {
       const weekValues = weekCols.map(([ci]) => (row[ci] != null ? row[ci] : null));
-      const extraValues = extraCols.map(([ci]) => (row[ci] != null ? row[ci] : null));
+      const extraValues = extraColPairs.map(([ci]) => (row[ci] != null ? row[ci] : null));
       entry.chemicals.push({ name, weekValues, extraValues });
     }
   }
@@ -75,7 +108,7 @@ async function fetchFromGoogleSheets() {
     throw new Error("google-sheets-config.js에 apiKey/spreadsheetId가 설정되어 있지 않습니다.");
   }
   const params = new URLSearchParams();
-  MONTH_ORDER.forEach(name => params.append("ranges", `'${name}'!A1:K30`));
+  MONTH_ORDER.forEach(name => params.append("ranges", `'${name}'!A1:N60`));
   params.append("valueRenderOption", "UNFORMATTED_VALUE");
   params.append("key", cfg.apiKey);
 
@@ -272,10 +305,6 @@ function renderDiffPanel(data) {
     el.innerHTML = `<p class="diff-empty">직전 업데이트 대비 변경사항이 없습니다.</p>`;
     return;
   }
-  const rows = CHEM_ORDER
-    .filter(name => selectedChemicals.has(name))
-    .map(name => diff.byChemical[name])
-    .map((d, idx) => [CHEM_ORDER[idx], d]);
 
   let html = "";
   CHEM_ORDER.filter(name => selectedChemicals.has(name)).forEach(name => {
