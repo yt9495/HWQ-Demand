@@ -1,3 +1,7 @@
+/*
+ * © 2025–2026 Young Tai Kang. All rights reserved.
+ * Licensed to JNF AM LLC for internal use.
+ */
 /* Chemical Demand Dashboard
    - Parses the weekly-updated "Chemical Demand Plan" data (Excel upload or Google Sheets sync)
    - Renders a per-month weekly demand table + a cross-month trend chart
