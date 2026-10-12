@@ -1,6 +1,6 @@
 /*
  * © 2025–2026 Young Tai Kang. All rights reserved.
- * Licensed to JNF AM LLC for internal use.
+ * Unauthorized use, copying, modification, or distribution without the written permission of Young Tai Kang is prohibited.
  */
 /* Firebase 연동 (Firestore) — firebase-config.js에서 FIREBASE_ENABLED = true 로 설정하면 활성화됩니다.
    컬렉션 구조: demandData/{docId: "latest"} 문서 하나에 전체 대시보드 JSON을 저장하는 단순한 구조입니다.
